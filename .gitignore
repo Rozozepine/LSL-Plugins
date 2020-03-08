@@ -10,4 +10,4 @@ CTestTestfile.cmake
 _deps
 .vscode/**
 *.o
-*.so
+build/**
