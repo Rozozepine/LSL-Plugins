@@ -1,1 +1,0 @@
-void set_status(int new_status);
