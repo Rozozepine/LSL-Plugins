@@ -263,6 +263,33 @@ src/lsl_plugin.cpp.s:
 	$(MAKE) -f CMakeFiles/lsl_plugin.dir/build.make CMakeFiles/lsl_plugin.dir/src/lsl_plugin.cpp.s
 .PHONY : src/lsl_plugin.cpp.s
 
+src/lsl_plugin_prop.o: src/lsl_plugin_prop.cpp.o
+
+.PHONY : src/lsl_plugin_prop.o
+
+# target to build an object file
+src/lsl_plugin_prop.cpp.o:
+	$(MAKE) -f CMakeFiles/lsl_plugin.dir/build.make CMakeFiles/lsl_plugin.dir/src/lsl_plugin_prop.cpp.o
+.PHONY : src/lsl_plugin_prop.cpp.o
+
+src/lsl_plugin_prop.i: src/lsl_plugin_prop.cpp.i
+
+.PHONY : src/lsl_plugin_prop.i
+
+# target to preprocess a source file
+src/lsl_plugin_prop.cpp.i:
+	$(MAKE) -f CMakeFiles/lsl_plugin.dir/build.make CMakeFiles/lsl_plugin.dir/src/lsl_plugin_prop.cpp.i
+.PHONY : src/lsl_plugin_prop.cpp.i
+
+src/lsl_plugin_prop.s: src/lsl_plugin_prop.cpp.s
+
+.PHONY : src/lsl_plugin_prop.s
+
+# target to generate assembly for a file
+src/lsl_plugin_prop.cpp.s:
+	$(MAKE) -f CMakeFiles/lsl_plugin.dir/build.make CMakeFiles/lsl_plugin.dir/src/lsl_plugin_prop.cpp.s
+.PHONY : src/lsl_plugin_prop.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -286,6 +313,9 @@ help:
 	@echo "... src/lsl_plugin.o"
 	@echo "... src/lsl_plugin.i"
 	@echo "... src/lsl_plugin.s"
+	@echo "... src/lsl_plugin_prop.o"
+	@echo "... src/lsl_plugin_prop.i"
+	@echo "... src/lsl_plugin_prop.s"
 .PHONY : help
 
 

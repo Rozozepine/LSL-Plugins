@@ -20,10 +20,12 @@ endif()
 
 set(lsl-plugin_SOURCES
     src/lsl_output.cpp
-    src/lsl_plugin.cpp)
+	src/lsl_plugin.cpp
+	src/lsl_plugin_prop.cpp)
     
 set(lsl_plugin_HEADERS
-    src/header/lsl_output.h)
+	src/header/lsl_output.h
+	src/header/lsl_plugin_prop.h)
 
 add_library(lsl_plugin MODULE
     ${lsl-plugin_SOURCES}
@@ -68,5 +70,88 @@ if(UNIX AND NOT APPLE)
 		LIBRARY DESTINATION usr/lib/obs-plugins)
 
 	install(FILES ${locale_files}
-		DESTINATION "${CMAKE_INSTALL_PREFIX}/share/obs/obs-plugins/obs-ndi/locale")
+		DESTINATION "${CMAKE_INSTALL_PREFIX}/share/obs/obs-plugins/lsl_plugin/locale")
+endif()
+
+# Windows
+if(WIN32)
+	set(OBS_FRONTEND_LIB "OBS_FRONTEND_LIB-NOTFOUND" CACHE FILEPATH "OBS frontend library")
+	if(OBS_FRONTEND_LIB EQUAL "OBS_FRONTEND_LIB-NOTFOUND")
+		message(FATAL_ERROR "Could not find OBS Frontend API\'s library !")
+	endif()
+
+    if(MSVC)
+	    add_compile_options("/MP")
+    endif()
+
+	add_definitions(/O2)
+	string(REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+	message("${CMAKE_CXX_FLAGS_RELEASE}")
+
+	if(ARCH EQUAL 64)
+		set(OBS_ARCH_NAME "64bit")
+		set(OBS_BUILDDIR_ARCH "build64")
+	else()
+		set(OBS_ARCH_NAME "32bit")
+		set(OBS_BUILDDIR_ARCH "build32")
+		add_definitions(/arch:SSE2)
+	endif()
+
+	target_link_libraries(lsl_plugin
+		obs-frontend-api)
+
+	set(RELEASE_DIR "${PROJECT_SOURCE_DIR}/release")
+	add_custom_command(TARGET lsl_plugin POST_BUILD
+        # If config is Release, package release files
+		COMMAND if $<CONFIG:Release>==1 (
+			"${CMAKE_COMMAND}" -E make_directory
+				"${RELEASE_DIR}/data/obs-plugins/lsl_plugin"
+				"${RELEASE_DIR}/obs-plugins/${OBS_ARCH_NAME}")
+
+		COMMAND if $<CONFIG:Release>==1 (
+			"${CMAKE_COMMAND}" -E copy_directory
+				"${PROJECT_SOURCE_DIR}/data"
+				"${RELEASE_DIR}/data/obs-plugins/lsl_plugin")
+
+		COMMAND if $<CONFIG:Release>==1 (
+			"${CMAKE_COMMAND}" -E copy
+				"$<TARGET_FILE:lsl_plugin>"
+				"${RELEASE_DIR}/obs-plugins/${OBS_ARCH_NAME}")
+
+        # If config is RelWithDebInfo, package release files
+		COMMAND if $<CONFIG:RelWithDebInfo>==1 (
+			"${CMAKE_COMMAND}" -E make_directory
+			    "${RELEASE_DIR}/data/obs-plugins/lsl_plugin"
+			    "${RELEASE_DIR}/obs-plugins/${OBS_ARCH_NAME}")
+
+		COMMAND if $<CONFIG:RelWithDebInfo>==1 (
+            "${CMAKE_COMMAND}" -E copy_directory
+			    "${PROJECT_SOURCE_DIR}/data"
+			    "${RELEASE_DIR}/data/obs-plugins/lsl_plugin")
+
+		COMMAND if $<CONFIG:RelWithDebInfo>==1 (
+            "${CMAKE_COMMAND}" -E copy
+			    "$<TARGET_FILE:lsl_plugin>"
+			    "${RELEASE_DIR}/obs-plugins/${OBS_ARCH_NAME}")
+
+		COMMAND if $<CONFIG:RelWithDebInfo>==1 (
+            "${CMAKE_COMMAND}" -E copy
+			    "$<TARGET_PDB_FILE:lsl_plugin>"
+			    "${RELEASE_DIR}/obs-plugins/${OBS_ARCH_NAME}")
+
+		# Copy to obs-studio dev environment for immediate testing
+		COMMAND if $<CONFIG:Debug>==1 (
+			"${CMAKE_COMMAND}" -E copy
+				"$<TARGET_FILE:lsl_plugin>"
+				"${LIBOBS_INCLUDE_DIR}/../${OBS_BUILDDIR_ARCH}/rundir/$<CONFIG>/obs-plugins/${OBS_ARCH_NAME}")
+
+		COMMAND if $<CONFIG:Debug>==1 (
+			"${CMAKE_COMMAND}" -E make_directory
+				"${LIBOBS_INCLUDE_DIR}/../${OBS_BUILDDIR_ARCH}/rundir/$<CONFIG>/data/obs-plugins/lsl_plugin")
+
+		COMMAND if $<CONFIG:Debug>==1 (
+			"${CMAKE_COMMAND}" -E copy_directory
+				"${PROJECT_SOURCE_DIR}/data"
+				"${LIBOBS_INCLUDE_DIR}/../${OBS_BUILDDIR_ARCH}/rundir/$<CONFIG>/data/obs-plugins/lsl_plugin")
+	)
 endif()

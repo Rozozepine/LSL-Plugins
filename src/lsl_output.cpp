@@ -1,7 +1,10 @@
+
 #include <obs-module.h>
 #include <stdio.h>
 #include <obs.h>
 #include <lsl_c.h>
+#include "header/lsl_plugin_prop.h"
+#include <util/config-file.h>
 
 struct lsl_output_data
 {
@@ -12,20 +15,24 @@ struct lsl_output_data
 	char string_marker[10];
 	lsl_streaminfo info;
 	lsl_outlet outlet;
+    bool record;
+    bool stream;
 };
 
 obs_output_t *lsl_out;
 bool output_running = false;
-bool output_send = false;
+bool output_record = false;
+bool output_stream = false;
 
 static const char *lsl_output_getname(void *unused){
     UNUSED_PARAMETER(unused);
-    return obs_module_text("LSL Output");
+    return "LSL Output";
 };
 
 static void lsl_output_destroy(void *data){
     output_running = false;
-    output_send = false;
+    output_record = false;
+    output_stream = false;
     struct lsl_output_data *out_data = (struct lsl_output_data*) data;
     if(out_data){
         bfree(data);
@@ -52,16 +59,23 @@ static void lsl_output_stop(void *data, uint64_t ts){
         struct lsl_output_data *out_data = (struct lsl_output_data*) data;
         obs_output_end_data_capture(out_data->output);
         output_running = false;
-        output_send = false;
+        output_record = false;
 }
 
 
+bool check(bool stream_data, bool record_data){
+    bool stream = stream_data && output_stream;
+    bool record = record_data && output_record;
+    return stream || record;
+}
 
 static void lsl_outuput_run(void *param, struct video_data *frame){
     if(output_running)
         return;
-
     struct lsl_output_data *out_data = (struct lsl_output_data*) param;
+    if(!(check(out_data->stream, out_data->record)))
+        return;
+
     out_data->lat_video_ts = frame->timestamp;
 	int32_t tab[1];
 	tab[0] = (int) out_data->frame_number;
@@ -73,9 +87,19 @@ static obs_properties_t *lsl_output_properties(void *data)
 {
         obs_properties_t *ppts = obs_properties_create();
         obs_properties_add_bool(ppts, "my_bool",
-                        obs_module_text("MyBool"));
+                        "MyBool");
         UNUSED_PARAMETER(data);
         return ppts;
+}
+static void lsl_output_update(void *data, obs_data_t *settings)
+{
+	lsl_output_data *out_data = (lsl_output_data*)data;
+    out_data->record = (settings,"stream");
+	out_data->stream = (settings, "record");
+	const char* name = obs_data_get_string(settings,"id_name");
+    lsl_destroy_outlet(out_data->outlet);
+    out_data->info = lsl_create_streaminfo("test","Markers", 1, LSL_IRREGULAR_RATE, cft_int32, name);
+    out_data->outlet = lsl_create_outlet(out_data->info, 0, 360);
 }
 
 struct obs_output_info create_output_info()
@@ -90,6 +114,7 @@ struct obs_output_info create_output_info()
     output_info.stop                 = lsl_output_stop;
     output_info.raw_video            = lsl_outuput_run;
     output_info.get_properties       = lsl_output_properties;
+    output_info.update               = lsl_output_update;
     return output_info;
 }
 
@@ -101,15 +126,31 @@ void lsl_output_init(){
     obs_data_release(setting);
 
 }
+void lsl_output_set_data(struct lsl_upadte_data* update_data)
+{
+	obs_data_t *settings = obs_data_create();
+    obs_data_set_bool(settings,"stream", update_data->stream);
+	obs_data_set_bool(settings, "record", update_data->record);
+	obs_data_set_string(settings,"id_name", update_data->id_name.toStdString().c_str());
+	obs_output_update(lsl_out, settings);
+	obs_data_release(settings);
+}
+
 void lsl_output_enable(){
     obs_output_start(lsl_out);
 }
 void lsl_output_disable(){
     obs_output_stop(lsl_out);
 }
-void start_send(){
-	output_send = true; 
+void start_send_record(){
+	output_record = true; 
 }
-void stop_send(){
-    output_send = false;
+void stop_send_record(){
+    output_record = false;
+}
+void start_send_stream(){
+    output_stream = true;
+}
+void stop_send_stream(){
+    output_stream = false;
 }
